@@ -2,8 +2,6 @@ package wallet
 
 import (
 	"bytes"
-	"encoding/json"
-	"math/big"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -92,6 +90,8 @@ type Datastore interface {
 	Txns() Txns
 	Keys() Keys
 	WatchedScripts() WatchedScripts
+	ScanBlocks() ScanBlocks
+	NoticeTxs() NoticeTxs
 }
 
 type Utxos interface {
@@ -121,7 +121,7 @@ type Stxos interface {
 
 type Txns interface {
 	// Put a new transaction to the database
-	Put(raw []byte, txid, value string, height int, timestamp time.Time, watchOnly bool) error
+	Put(raw []byte, txid string, value, height int, timestamp time.Time, watchOnly bool) error
 
 	// Fetch a tx and it's metadata given a hash
 	Get(txid chainhash.Hash) (Txn, error)
@@ -173,7 +173,6 @@ type Keys interface {
 }
 
 type WatchedScripts interface {
-
 	// Add scripts to watch
 	PutAll(scriptPubkeys [][]byte) error
 
@@ -187,6 +186,28 @@ type WatchedScripts interface {
 	Delete(scriptPubKey []byte) error
 }
 
+type ScanBlocks interface {
+	Put(blockHash string, blockHeight int, isFixScan int) error
+
+	Get(blockHash string) (ScanBlock, error)
+
+	UpdateBlock(blockHash string, isFixScan int) error
+
+	Delete(blockHash string) error
+
+	GetLatestUnScanBlockHash() (string, error)
+}
+
+type NoticeTxs interface {
+	Put(txHash string, value int, wechatTxId string, isNotice int) error
+
+	Get(txHash string) (NoticeTx, error)
+
+	UpdateBlock(txHash string, value int, wechatTxId string, isNotice int) error
+
+	Delete(txHash string) error
+}
+
 type Utxo struct {
 	// Previous txid and output index
 	Op wire.OutPoint
@@ -195,7 +216,7 @@ type Utxo struct {
 	AtHeight int32
 
 	// The higher the better
-	Value string
+	Value int64
 
 	// Output script
 	ScriptPubkey []byte
@@ -227,7 +248,7 @@ func (utxo *Utxo) IsEqual(alt *Utxo) bool {
 		return false
 	}
 
-	if !bytes.Equal(utxo.ScriptPubkey, alt.ScriptPubkey) {
+	if bytes.Compare(utxo.ScriptPubkey, alt.ScriptPubkey) != 0 {
 		return false
 	}
 
@@ -270,7 +291,7 @@ type Txn struct {
 	Txid string
 
 	// The value relevant to the wallet
-	Value string
+	Value int64
 
 	// The height at which it was mined
 	Height int32
@@ -301,7 +322,18 @@ type Txn struct {
 
 	Outputs []TransactionOutput
 }
+type ScanBlock struct {
+	BlockHash   string
+	BlockHeight int
+	IsFixScan   int
+}
 
+type NoticeTx struct {
+	TxHash     string
+	Value      int
+	WechatTxId string
+	IsNotice   int
+}
 type StatusCode string
 
 const (
@@ -316,14 +348,4 @@ const (
 type KeyPath struct {
 	Purpose KeyPurpose
 	Index   int
-}
-
-type CurrencyDefinition struct {
-	Code         string
-	Divisibility int64
-}
-type CurrencyValue struct {
-	Currency           CurrencyDefinition
-	Value              big.Int
-	ValueSerialization json.Number
 }
