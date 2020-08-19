@@ -199,7 +199,7 @@ type ScanBlocks interface {
 }
 
 type NoticeTxs interface {
-	Put(txHash string, value int, wechatTxId string, isNotice int) error
+	Put(txHash string, value int, wechatTxId string, isNotice int, noticedCount int) error
 
 	Get(txHash string) (NoticeTx, error)
 
@@ -329,10 +329,10 @@ type ScanBlock struct {
 }
 
 type NoticeTx struct {
-	TxHash      string
-	Value       int
-	WechatTxId  string
-	IsNotice    int
+	TxHash       string
+	Value        int
+	WechatTxId   string
+	IsNotice     int
 	NoticedCount int
 }
 type StatusCode string
