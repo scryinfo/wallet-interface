@@ -203,7 +203,7 @@ type NoticeTxs interface {
 
 	Get(txHash string) (NoticeTx, error)
 
-	UpdateBlock(txHash string, value int, wechatTxId string, isNotice int, noticeCount int) error
+	UpdateNotice(txHash string, value int, wechatTxId string, isNotice int, noticedCount int) error
 
 	Delete(txHash string) error
 }
